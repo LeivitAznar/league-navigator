@@ -9,6 +9,7 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as MatchRouteImport } from './routes/match'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as CareerIndexRouteImport } from './routes/career.index'
@@ -19,6 +20,11 @@ import { Route as CareerSquadRouteImport } from './routes/career.squad'
 import { Route as CareerCreateRouteImport } from './routes/career.create'
 import { Route as CareerCalendarRouteImport } from './routes/career.calendar'
 
+const SettingsRoute = SettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const MatchRoute = MatchRouteImport.update({
   id: '/match',
   path: '/match',
@@ -68,6 +74,7 @@ const CareerCalendarRoute = CareerCalendarRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/match': typeof MatchRoute
+  '/settings': typeof SettingsRoute
   '/career/calendar': typeof CareerCalendarRoute
   '/career/create': typeof CareerCreateRoute
   '/career/squad': typeof CareerSquadRoute
@@ -79,6 +86,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/match': typeof MatchRoute
+  '/settings': typeof SettingsRoute
   '/career/calendar': typeof CareerCalendarRoute
   '/career/create': typeof CareerCreateRoute
   '/career/squad': typeof CareerSquadRoute
@@ -91,6 +99,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/match': typeof MatchRoute
+  '/settings': typeof SettingsRoute
   '/career/calendar': typeof CareerCalendarRoute
   '/career/create': typeof CareerCreateRoute
   '/career/squad': typeof CareerSquadRoute
@@ -104,6 +113,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/match'
+    | '/settings'
     | '/career/calendar'
     | '/career/create'
     | '/career/squad'
@@ -115,6 +125,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/match'
+    | '/settings'
     | '/career/calendar'
     | '/career/create'
     | '/career/squad'
@@ -126,6 +137,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/match'
+    | '/settings'
     | '/career/calendar'
     | '/career/create'
     | '/career/squad'
@@ -138,6 +150,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   MatchRoute: typeof MatchRoute
+  SettingsRoute: typeof SettingsRoute
   CareerCalendarRoute: typeof CareerCalendarRoute
   CareerCreateRoute: typeof CareerCreateRoute
   CareerSquadRoute: typeof CareerSquadRoute
@@ -149,6 +162,13 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/settings': {
+      id: '/settings'
+      path: '/settings'
+      fullPath: '/settings'
+      preLoaderRoute: typeof SettingsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/match': {
       id: '/match'
       path: '/match'
@@ -218,6 +238,7 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   MatchRoute: MatchRoute,
+  SettingsRoute: SettingsRoute,
   CareerCalendarRoute: CareerCalendarRoute,
   CareerCreateRoute: CareerCreateRoute,
   CareerSquadRoute: CareerSquadRoute,
