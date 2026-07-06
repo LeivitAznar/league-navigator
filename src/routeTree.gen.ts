@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as CareerIndexRouteImport } from './routes/career.index'
+import { Route as CareerTableRouteImport } from './routes/career.table'
 import { Route as CareerCreateRouteImport } from './routes/career.create'
 import { Route as CareerCalendarRouteImport } from './routes/career.calendar'
 
@@ -22,6 +23,11 @@ const IndexRoute = IndexRouteImport.update({
 const CareerIndexRoute = CareerIndexRouteImport.update({
   id: '/career/',
   path: '/career/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CareerTableRoute = CareerTableRouteImport.update({
+  id: '/career/table',
+  path: '/career/table',
   getParentRoute: () => rootRouteImport,
 } as any)
 const CareerCreateRoute = CareerCreateRouteImport.update({
@@ -39,12 +45,14 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/career/calendar': typeof CareerCalendarRoute
   '/career/create': typeof CareerCreateRoute
+  '/career/table': typeof CareerTableRoute
   '/career/': typeof CareerIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/career/calendar': typeof CareerCalendarRoute
   '/career/create': typeof CareerCreateRoute
+  '/career/table': typeof CareerTableRoute
   '/career': typeof CareerIndexRoute
 }
 export interface FileRoutesById {
@@ -52,20 +60,33 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/career/calendar': typeof CareerCalendarRoute
   '/career/create': typeof CareerCreateRoute
+  '/career/table': typeof CareerTableRoute
   '/career/': typeof CareerIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/career/calendar' | '/career/create' | '/career/'
+  fullPaths:
+    | '/'
+    | '/career/calendar'
+    | '/career/create'
+    | '/career/table'
+    | '/career/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/career/calendar' | '/career/create' | '/career'
-  id: '__root__' | '/' | '/career/calendar' | '/career/create' | '/career/'
+  to: '/' | '/career/calendar' | '/career/create' | '/career/table' | '/career'
+  id:
+    | '__root__'
+    | '/'
+    | '/career/calendar'
+    | '/career/create'
+    | '/career/table'
+    | '/career/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   CareerCalendarRoute: typeof CareerCalendarRoute
   CareerCreateRoute: typeof CareerCreateRoute
+  CareerTableRoute: typeof CareerTableRoute
   CareerIndexRoute: typeof CareerIndexRoute
 }
 
@@ -83,6 +104,13 @@ declare module '@tanstack/react-router' {
       path: '/career'
       fullPath: '/career/'
       preLoaderRoute: typeof CareerIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/career/table': {
+      id: '/career/table'
+      path: '/career/table'
+      fullPath: '/career/table'
+      preLoaderRoute: typeof CareerTableRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/career/create': {
@@ -106,6 +134,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   CareerCalendarRoute: CareerCalendarRoute,
   CareerCreateRoute: CareerCreateRoute,
+  CareerTableRoute: CareerTableRoute,
   CareerIndexRoute: CareerIndexRoute,
 }
 export const routeTree = rootRouteImport
