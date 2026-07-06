@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { ArrowLeft, ChevronRight, PlayCircle } from "lucide-react";
+import { ArrowLeft, ChevronRight, FastForward, PlayCircle } from "lucide-react";
 import { CareerLayout } from "@/components/career/career-layout";
 import { ClubCrest } from "@/components/career/club-crest";
 import {
@@ -69,13 +69,24 @@ function CareerHub() {
               <TeamBlock club={nextAway} />
             </div>
 
-            <Link
-              to="/match"
-              className="mt-8 flex items-center justify-center gap-2 border border-accent/60 bg-accent px-6 py-3 font-display text-sm font-bold uppercase tracking-widest text-accent-foreground transition hover:brightness-110"
-            >
-              <PlayCircle className="h-5 w-5" />
-              Jugar Partido
-            </Link>
+            <div className="mt-8 grid grid-cols-1 gap-2 sm:grid-cols-[2fr_1fr]">
+              <Link
+                to="/match"
+                search={{ mode: "play" }}
+                className="flex items-center justify-center gap-2 border border-accent/60 bg-accent px-6 py-3 font-display text-sm font-bold uppercase tracking-widest text-accent-foreground transition hover:brightness-110"
+              >
+                <PlayCircle className="h-5 w-5" />
+                Jugar Partido
+              </Link>
+              <Link
+                to="/match"
+                search={{ mode: "sim" }}
+                className="flex items-center justify-center gap-2 border border-border bg-secondary/60 px-6 py-3 font-display text-sm font-bold uppercase tracking-widest text-foreground transition hover:bg-secondary"
+              >
+                <FastForward className="h-4 w-4" />
+                Simular
+              </Link>
+            </div>
           </div>
         </section>
 
