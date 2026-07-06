@@ -5,14 +5,21 @@ import { ClubCrest } from "./club-crest";
 import { CURRENT_SEASON, USER_CLUB_ID, clubById } from "@/lib/career-data";
 import { cn } from "@/lib/utils";
 
-const NAV = [
+type NavItem = {
+  to: "/career" | "/career/calendar" | "/career/table" | "/career/squad" | "/career/stats" | "/career/transfers";
+  label: string;
+  icon: typeof Home;
+  exact?: boolean;
+};
+
+const NAV: NavItem[] = [
   { to: "/career", label: "Hub", icon: Home, exact: true },
   { to: "/career/calendar", label: "Calendario", icon: CalendarDays },
   { to: "/career/table", label: "Tabla", icon: Trophy },
   { to: "/career/squad", label: "Plantilla", icon: Users },
   { to: "/career/stats", label: "Stats", icon: BarChart3 },
   { to: "/career/transfers", label: "Transfers", icon: ArrowLeftRight },
-] as const;
+];
 
 export function CareerLayout({ children }: { children: ReactNode }) {
   const club = clubById(USER_CLUB_ID);
