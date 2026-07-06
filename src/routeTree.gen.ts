@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as CareerIndexRouteImport } from './routes/career.index'
+import { Route as CareerTransfersRouteImport } from './routes/career.transfers'
 import { Route as CareerTableRouteImport } from './routes/career.table'
 import { Route as CareerStatsRouteImport } from './routes/career.stats'
 import { Route as CareerSquadRouteImport } from './routes/career.squad'
@@ -25,6 +26,11 @@ const IndexRoute = IndexRouteImport.update({
 const CareerIndexRoute = CareerIndexRouteImport.update({
   id: '/career/',
   path: '/career/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CareerTransfersRoute = CareerTransfersRouteImport.update({
+  id: '/career/transfers',
+  path: '/career/transfers',
   getParentRoute: () => rootRouteImport,
 } as any)
 const CareerTableRoute = CareerTableRouteImport.update({
@@ -60,6 +66,7 @@ export interface FileRoutesByFullPath {
   '/career/squad': typeof CareerSquadRoute
   '/career/stats': typeof CareerStatsRoute
   '/career/table': typeof CareerTableRoute
+  '/career/transfers': typeof CareerTransfersRoute
   '/career/': typeof CareerIndexRoute
 }
 export interface FileRoutesByTo {
@@ -69,6 +76,7 @@ export interface FileRoutesByTo {
   '/career/squad': typeof CareerSquadRoute
   '/career/stats': typeof CareerStatsRoute
   '/career/table': typeof CareerTableRoute
+  '/career/transfers': typeof CareerTransfersRoute
   '/career': typeof CareerIndexRoute
 }
 export interface FileRoutesById {
@@ -79,6 +87,7 @@ export interface FileRoutesById {
   '/career/squad': typeof CareerSquadRoute
   '/career/stats': typeof CareerStatsRoute
   '/career/table': typeof CareerTableRoute
+  '/career/transfers': typeof CareerTransfersRoute
   '/career/': typeof CareerIndexRoute
 }
 export interface FileRouteTypes {
@@ -90,6 +99,7 @@ export interface FileRouteTypes {
     | '/career/squad'
     | '/career/stats'
     | '/career/table'
+    | '/career/transfers'
     | '/career/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -99,6 +109,7 @@ export interface FileRouteTypes {
     | '/career/squad'
     | '/career/stats'
     | '/career/table'
+    | '/career/transfers'
     | '/career'
   id:
     | '__root__'
@@ -108,6 +119,7 @@ export interface FileRouteTypes {
     | '/career/squad'
     | '/career/stats'
     | '/career/table'
+    | '/career/transfers'
     | '/career/'
   fileRoutesById: FileRoutesById
 }
@@ -118,6 +130,7 @@ export interface RootRouteChildren {
   CareerSquadRoute: typeof CareerSquadRoute
   CareerStatsRoute: typeof CareerStatsRoute
   CareerTableRoute: typeof CareerTableRoute
+  CareerTransfersRoute: typeof CareerTransfersRoute
   CareerIndexRoute: typeof CareerIndexRoute
 }
 
@@ -135,6 +148,13 @@ declare module '@tanstack/react-router' {
       path: '/career'
       fullPath: '/career/'
       preLoaderRoute: typeof CareerIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/career/transfers': {
+      id: '/career/transfers'
+      path: '/career/transfers'
+      fullPath: '/career/transfers'
+      preLoaderRoute: typeof CareerTransfersRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/career/table': {
@@ -182,6 +202,7 @@ const rootRouteChildren: RootRouteChildren = {
   CareerSquadRoute: CareerSquadRoute,
   CareerStatsRoute: CareerStatsRoute,
   CareerTableRoute: CareerTableRoute,
+  CareerTransfersRoute: CareerTransfersRoute,
   CareerIndexRoute: CareerIndexRoute,
 }
 export const routeTree = rootRouteImport
