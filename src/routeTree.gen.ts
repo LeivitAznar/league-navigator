@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as CareerIndexRouteImport } from './routes/career.index'
+import { Route as CareerCreateRouteImport } from './routes/career.create'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -22,30 +23,39 @@ const CareerIndexRoute = CareerIndexRouteImport.update({
   path: '/career/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const CareerCreateRoute = CareerCreateRouteImport.update({
+  id: '/career/create',
+  path: '/career/create',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/career/create': typeof CareerCreateRoute
   '/career/': typeof CareerIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/career/create': typeof CareerCreateRoute
   '/career': typeof CareerIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/career/create': typeof CareerCreateRoute
   '/career/': typeof CareerIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/career/'
+  fullPaths: '/' | '/career/create' | '/career/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/career'
-  id: '__root__' | '/' | '/career/'
+  to: '/' | '/career/create' | '/career'
+  id: '__root__' | '/' | '/career/create' | '/career/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  CareerCreateRoute: typeof CareerCreateRoute
   CareerIndexRoute: typeof CareerIndexRoute
 }
 
@@ -65,11 +75,19 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof CareerIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/career/create': {
+      id: '/career/create'
+      path: '/career/create'
+      fullPath: '/career/create'
+      preLoaderRoute: typeof CareerCreateRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  CareerCreateRoute: CareerCreateRoute,
   CareerIndexRoute: CareerIndexRoute,
 }
 export const routeTree = rootRouteImport
