@@ -9,38 +9,173 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as SettingsRouteImport } from './routes/settings'
+import { Route as MatchRouteImport } from './routes/match'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as CareerIndexRouteImport } from './routes/career.index'
+import { Route as CareerTransfersRouteImport } from './routes/career.transfers'
+import { Route as CareerTableRouteImport } from './routes/career.table'
+import { Route as CareerStatsRouteImport } from './routes/career.stats'
+import { Route as CareerSquadRouteImport } from './routes/career.squad'
+import { Route as CareerCreateRouteImport } from './routes/career.create'
+import { Route as CareerCalendarRouteImport } from './routes/career.calendar'
 
+const SettingsRoute = SettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MatchRoute = MatchRouteImport.update({
+  id: '/match',
+  path: '/match',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const CareerIndexRoute = CareerIndexRouteImport.update({
+  id: '/career/',
+  path: '/career/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CareerTransfersRoute = CareerTransfersRouteImport.update({
+  id: '/career/transfers',
+  path: '/career/transfers',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CareerTableRoute = CareerTableRouteImport.update({
+  id: '/career/table',
+  path: '/career/table',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CareerStatsRoute = CareerStatsRouteImport.update({
+  id: '/career/stats',
+  path: '/career/stats',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CareerSquadRoute = CareerSquadRouteImport.update({
+  id: '/career/squad',
+  path: '/career/squad',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CareerCreateRoute = CareerCreateRouteImport.update({
+  id: '/career/create',
+  path: '/career/create',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CareerCalendarRoute = CareerCalendarRouteImport.update({
+  id: '/career/calendar',
+  path: '/career/calendar',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/match': typeof MatchRoute
+  '/settings': typeof SettingsRoute
+  '/career/calendar': typeof CareerCalendarRoute
+  '/career/create': typeof CareerCreateRoute
+  '/career/squad': typeof CareerSquadRoute
+  '/career/stats': typeof CareerStatsRoute
+  '/career/table': typeof CareerTableRoute
+  '/career/transfers': typeof CareerTransfersRoute
+  '/career/': typeof CareerIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/match': typeof MatchRoute
+  '/settings': typeof SettingsRoute
+  '/career/calendar': typeof CareerCalendarRoute
+  '/career/create': typeof CareerCreateRoute
+  '/career/squad': typeof CareerSquadRoute
+  '/career/stats': typeof CareerStatsRoute
+  '/career/table': typeof CareerTableRoute
+  '/career/transfers': typeof CareerTransfersRoute
+  '/career': typeof CareerIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/match': typeof MatchRoute
+  '/settings': typeof SettingsRoute
+  '/career/calendar': typeof CareerCalendarRoute
+  '/career/create': typeof CareerCreateRoute
+  '/career/squad': typeof CareerSquadRoute
+  '/career/stats': typeof CareerStatsRoute
+  '/career/table': typeof CareerTableRoute
+  '/career/transfers': typeof CareerTransfersRoute
+  '/career/': typeof CareerIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths:
+    | '/'
+    | '/match'
+    | '/settings'
+    | '/career/calendar'
+    | '/career/create'
+    | '/career/squad'
+    | '/career/stats'
+    | '/career/table'
+    | '/career/transfers'
+    | '/career/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to:
+    | '/'
+    | '/match'
+    | '/settings'
+    | '/career/calendar'
+    | '/career/create'
+    | '/career/squad'
+    | '/career/stats'
+    | '/career/table'
+    | '/career/transfers'
+    | '/career'
+  id:
+    | '__root__'
+    | '/'
+    | '/match'
+    | '/settings'
+    | '/career/calendar'
+    | '/career/create'
+    | '/career/squad'
+    | '/career/stats'
+    | '/career/table'
+    | '/career/transfers'
+    | '/career/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  MatchRoute: typeof MatchRoute
+  SettingsRoute: typeof SettingsRoute
+  CareerCalendarRoute: typeof CareerCalendarRoute
+  CareerCreateRoute: typeof CareerCreateRoute
+  CareerSquadRoute: typeof CareerSquadRoute
+  CareerStatsRoute: typeof CareerStatsRoute
+  CareerTableRoute: typeof CareerTableRoute
+  CareerTransfersRoute: typeof CareerTransfersRoute
+  CareerIndexRoute: typeof CareerIndexRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/settings': {
+      id: '/settings'
+      path: '/settings'
+      fullPath: '/settings'
+      preLoaderRoute: typeof SettingsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/match': {
+      id: '/match'
+      path: '/match'
+      fullPath: '/match'
+      preLoaderRoute: typeof MatchRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -48,22 +183,70 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/career/': {
+      id: '/career/'
+      path: '/career'
+      fullPath: '/career/'
+      preLoaderRoute: typeof CareerIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/career/transfers': {
+      id: '/career/transfers'
+      path: '/career/transfers'
+      fullPath: '/career/transfers'
+      preLoaderRoute: typeof CareerTransfersRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/career/table': {
+      id: '/career/table'
+      path: '/career/table'
+      fullPath: '/career/table'
+      preLoaderRoute: typeof CareerTableRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/career/stats': {
+      id: '/career/stats'
+      path: '/career/stats'
+      fullPath: '/career/stats'
+      preLoaderRoute: typeof CareerStatsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/career/squad': {
+      id: '/career/squad'
+      path: '/career/squad'
+      fullPath: '/career/squad'
+      preLoaderRoute: typeof CareerSquadRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/career/create': {
+      id: '/career/create'
+      path: '/career/create'
+      fullPath: '/career/create'
+      preLoaderRoute: typeof CareerCreateRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/career/calendar': {
+      id: '/career/calendar'
+      path: '/career/calendar'
+      fullPath: '/career/calendar'
+      preLoaderRoute: typeof CareerCalendarRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  MatchRoute: MatchRoute,
+  SettingsRoute: SettingsRoute,
+  CareerCalendarRoute: CareerCalendarRoute,
+  CareerCreateRoute: CareerCreateRoute,
+  CareerSquadRoute: CareerSquadRoute,
+  CareerStatsRoute: CareerStatsRoute,
+  CareerTableRoute: CareerTableRoute,
+  CareerTransfersRoute: CareerTransfersRoute,
+  CareerIndexRoute: CareerIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
