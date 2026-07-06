@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { PlayCircle } from "lucide-react";
+import { FastForward, PlayCircle } from "lucide-react";
 import { CareerLayout } from "@/components/career/career-layout";
 import { ClubCrest } from "@/components/career/club-crest";
 import { FIXTURES, USER_CLUB_ID, clubById, nextFixture } from "@/lib/career-data";
@@ -69,14 +69,24 @@ function Calendar() {
 
               <TeamCell club={away} highlight={isUserAway} align="left" />
 
-              <div className="text-right">
+              <div className="flex flex-col items-end gap-1 text-right">
                 {isNext ? (
-                  <Link
-                    to="/match"
-                    className="inline-flex items-center gap-1 border border-accent bg-accent px-3 py-2 font-display text-[10px] font-bold uppercase tracking-widest text-accent-foreground hover:brightness-110"
-                  >
-                    <PlayCircle className="h-3 w-3" /> Jugar
-                  </Link>
+                  <div className="flex flex-col gap-1 sm:flex-row">
+                    <Link
+                      to="/match"
+                      search={{ mode: "play" }}
+                      className="inline-flex items-center gap-1 border border-accent bg-accent px-3 py-2 font-display text-[10px] font-bold uppercase tracking-widest text-accent-foreground hover:brightness-110"
+                    >
+                      <PlayCircle className="h-3 w-3" /> Jugar
+                    </Link>
+                    <Link
+                      to="/match"
+                      search={{ mode: "sim" }}
+                      className="inline-flex items-center gap-1 border border-border bg-secondary/60 px-3 py-2 font-display text-[10px] font-bold uppercase tracking-widest text-foreground hover:bg-secondary"
+                    >
+                      <FastForward className="h-3 w-3" /> Simular
+                    </Link>
+                  </div>
                 ) : result ? (
                   <ResultBadge result={result} />
                 ) : (
