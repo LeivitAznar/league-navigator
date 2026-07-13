@@ -1,21 +1,26 @@
 /**
- * Tunable constants for the match engine, calibrated against Haxball's
- * documented "Classic" stadium physics (60Hz fixed tick, multiplicative
- * per-tick damping) but tuned for a faster, more arcade feel (Mamoball-style
- * controls) per product spec.
+ * Tunable constants for the Matter-based match engine. Calibrated to
+ * reproduce HaxBall's "Classic" stadium feel: instant, precise player
+ * control (no inertia/ice feel) layered on top of Matter's collision
+ * solver for realistic ball contact (deflections, blocks, soft touches).
+ *
+ * Movement/damping stay deterministic and engine-independent: every tick we
+ * set velocity directly (`velocity = velocity*damping + input*accel`,
+ * clamped to a max speed) instead of relying on Matter's built-in
+ * `frictionAir` — this keeps input response immediate and reproducible.
+ * Matter's own solver (restitution/friction/mass) is reserved for what it's
+ * good at: body-to-body contact response.
  */
 
 export const FIELD = {
   width: 1000,
   height: 600,
-  wallThickness: 20,
-  goalWidth: 160, // vertical opening on each end
-  goalDepth: 34, // how far the goal sensor extends past the goal line
+  wallThickness: 24,
+  goalWidth: 160,
+  goalDepth: 34,
 };
 
 export const PHYSICS = {
-  FIXED_STEP_MS: 1000 / 60,
-
   playerRadius: 15,
   ballRadius: 10,
 
@@ -23,29 +28,35 @@ export const PHYSICS = {
   playerMass: 2.2,
   ballMass: 1,
 
-  // Multiplicative per-tick damping (velocity *= damping each 1/60s tick) —
-  // NOT Arcade's linear setDrag(). This is what gives the Haxball-style
-  // "decays fast, then eases off" brake curve.
-  playerDamping: 0.96,
-  ballDamping: 0.99,
+  // Manual per-tick multiplicative damping applied ourselves every fixed
+  // Matter step (see movement-system.ts) — NOT Matter's frictionAir, which
+  // we zero out on every body for full determinism.
+  playerDamping: 0.92,
+  ballDamping: 0.985,
 
-  // Steady-state velocity = accelPerTick / (1 - damping). With damping 0.96,
-  // accelPerTick 8 gives a ~200px/s steady-state run speed.
-  playerAccelPerTick: 8,
+  // Steady-state speed ≈ accelPerTick / (1 - damping).
+  playerAccelPerTick: 16,
+  playerMaxSpeed: 6.2, // px/ms-tick equivalent (~ Matter velocity units)
 
-  playerBounce: 0.08,
-  ballBounce: 0.68,
-  wallBounce: 0.7,
+  ballMaxSpeed: 22,
 
-  kickRange: 35,
-  passSpeed: 300,
-  shotSpeed: 580,
-  kickCooldownMs: 350,
+  // Matter contact material properties. Friction (tangential) is kept at 0
+  // everywhere: these are circles that never need rolling/sliding friction
+  // for gameplay feel, and zero friction avoids any spin-driven drift.
+  playerRestitution: 0.05, // players barely bounce off each other/walls
+  ballRestitutionWall: 0.78, // lively wall rebounds
+  ballRestitutionPlayer: 0.35, // ball deflects off players without going dead
+  friction: 0,
+  frictionStatic: 0,
 
-  // Lunge: brief extra impulse in the kick direction, simulating the body
-  // lunging into the ball (Haxball's kickingAcceleration), applied on top of
-  // normal movement for a short window after a kick.
-  lungeSpeed: 75,
+  kickRange: 36,
+  passSpeed: 9.5,
+  shotSpeed: 18,
+  kickCooldownMs: 320,
+
+  // Lunge: brief extra velocity in the kick direction right after kicking,
+  // simulating the player's body lunging into the ball.
+  lungeSpeed: 3.2,
   lungeDurationMs: 110,
 } as const;
 
@@ -58,3 +69,11 @@ export const CONTROLS = {
   joystickRadius: 55,
   joystickDeadzone: 8,
 };
+
+/** Matter collision categories (bitmask). Category 0x0001 is Matter's default/unused. */
+export const COLLISION = {
+  PLAYER: 0x0002,
+  BALL: 0x0004,
+  WALL: 0x0008,
+  GOAL_SENSOR: 0x0010,
+} as const;
