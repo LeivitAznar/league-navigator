@@ -1,5 +1,5 @@
 import Phaser from "phaser";
-import { MatchScene } from "@/game/match-scene";
+import { getCanvasSize, MatchScene, type MatchSceneEvents } from "@/game/match-scene";
 
 /**
  * Boots a Phaser game instance into the given parent element.
@@ -7,21 +7,29 @@ import { MatchScene } from "@/game/match-scene";
  * `#match-canvas-root` (which is already sized to 100% of the
  * match viewport by the surrounding React layout).
  */
-export function createMatchGame(parent: HTMLElement): Phaser.Game {
+export function createMatchGame(parent: HTMLElement, events: MatchSceneEvents = {}): Phaser.Game {
+  const { width, height } = getCanvasSize();
+
   return new Phaser.Game({
     type: Phaser.AUTO,
     parent,
-    width: 1280,
-    height: 720,
-    backgroundColor: "#1f7a3d",
+    width,
+    height,
+    backgroundColor: "#0b3d1f",
     scale: {
       mode: Phaser.Scale.FIT,
       autoCenter: Phaser.Scale.CENTER_BOTH,
     },
     physics: {
       default: "arcade",
-      arcade: { debug: false },
+      arcade: {
+        gravity: { x: 0, y: 0 },
+        debug: false,
+      },
     },
-    scene: [MatchScene],
+    input: {
+      activePointers: 3,
+    },
+    scene: [new MatchScene(events)],
   });
 }
