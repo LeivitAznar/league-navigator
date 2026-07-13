@@ -12,4 +12,18 @@ export default defineConfig({
     // nitro/vite builds from this
     server: { entry: "server" },
   },
+  // Outside the Lovable sandbox, the base config binds to host "::" (IPv6
+  // any-interface), which this container's network stack rejects
+  // (EAFNOSUPPORT). Override to the Replit-compatible host/port; this only
+  // applies when not running inside the Lovable sandbox (see isSandbox
+  // check in @lovable.dev/vite-tanstack-config), where user vite config
+  // wins over the sandbox defaults.
+  vite: {
+    server: {
+      host: "0.0.0.0",
+      port: 5000,
+      strictPort: true,
+      allowedHosts: true,
+    },
+  },
 });

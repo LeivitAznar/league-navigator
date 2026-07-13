@@ -1,6 +1,7 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { Pause, Trophy, Volume2 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import type Phaser from "phaser";
 import { z } from "zod";
 import { ClubCrest } from "@/components/career/club-crest";
 import { MatchSimulation } from "@/components/match/match-simulation";
@@ -128,6 +129,29 @@ function MatchView() {
  * así que Phaser puede escalarse libremente sin recalcular HUDs.
  */
 export function MatchViewport() {
+  const gameRef = useRef<Phaser.Game | null>(null);
+
+  useEffect(() => {
+    const container = document.getElementById("match-canvas-root");
+    if (!container) return;
+
+    let cancelled = false;
+
+    // Dynamic import keeps Phaser (a browser-only lib — it touches `navigator`
+    // at module init) out of the SSR module graph for this route. A static
+    // top-level import would get evaluated during server rendering and crash.
+    import("@/game/create-match-game").then(({ createMatchGame }) => {
+      if (cancelled) return;
+      gameRef.current = createMatchGame(container);
+    });
+
+    return () => {
+      cancelled = true;
+      gameRef.current?.destroy(true);
+      gameRef.current = null;
+    };
+  }, []);
+
   return (
     <div
       id="match-viewport"
