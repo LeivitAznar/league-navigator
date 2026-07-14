@@ -1,3 +1,0 @@
-- [Lovable vite-tanstack-config host binding](lovable-vite-host-binding.md) — imported Lovable/TanStack Start projects fail to boot on Replit with EAFNOSUPPORT unless dev server host is overridden.
-- [Phaser + SSR frameworks](phaser-ssr-dynamic-import.md) — Phaser must be dynamically imported inside a client-only effect or it crashes SSR frameworks (TanStack Start, Next, etc).
-- [Phaser Scene reserved property names](phaser-scene-reserved-names.md) — don't name a custom Scene field `input` (or other built-in Scene plugin names); it silently shadows Phaser's own plugin and breaks typing.
