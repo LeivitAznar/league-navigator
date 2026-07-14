@@ -132,23 +132,75 @@ export function MatchViewport() {
   const gameRef = useRef<Phaser.Game | null>(null);
 
   useEffect(() => {
+    console.log("[match] mount: effect running");
+
     const container = document.getElementById("match-canvas-root");
-    if (!container) return;
+    if (!container) {
+      console.error("[match] mount: #match-canvas-root not found in DOM");
+      return;
+    }
 
-    let cancelled = false;
+    let destroyed = false;
+    let rafId: number | null = null;
+    let sizeAttempts = 0;
 
-    // Dynamic import keeps Phaser (a browser-only lib — it touches `navigator`
-    // at module init) out of the SSR module graph for this route. A static
-    // top-level import would get evaluated during server rendering and crash.
-    import("@/game/create-match-game").then(({ createMatchGame }) => {
-      if (cancelled) return;
-      gameRef.current = createMatchGame(container);
-    });
+    // (d) Guard against booting Phaser before the container has real layout
+    // dimensions — instantiating into a 0x0 parent leaves the game "hung".
+    // Poll via rAF (capped) instead of trusting the container is measured
+    // in the same tick as this effect.
+    const waitForSize = () => {
+      if (destroyed) return;
+      const rect = container.getBoundingClientRect();
+      sizeAttempts++;
+      if (rect.width > 0 && rect.height > 0) {
+        console.log(`[match] container measured: ${rect.width.toFixed(0)}x${rect.height.toFixed(0)}`);
+        boot();
+        return;
+      }
+      if (sizeAttempts > 90) {
+        console.warn("[match] container still 0x0 after ~1.5s, booting anyway");
+        boot();
+        return;
+      }
+      rafId = requestAnimationFrame(waitForSize);
+    };
+
+    // (a) StrictMode runs mount effects twice in dev — guard with a ref check
+    // (not just the `destroyed` closure flag) so a slow dynamic import can
+    // never result in two competing Phaser.Game instances on the same canvas.
+    const boot = () => {
+      if (destroyed || gameRef.current) return;
+      // Dynamic import keeps Phaser (a browser-only lib — it touches
+      // `navigator` at module init) out of the SSR module graph for this
+      // route. A static top-level import would get evaluated during server
+      // rendering and crash.
+      import("@/game/create-match-game").then(({ createMatchGame }) => {
+        if (destroyed) {
+          console.log("[match] import resolved after unmount, skipping game creation");
+          return;
+        }
+        if (gameRef.current) {
+          console.log("[match] game already created, skipping duplicate (StrictMode double-invoke guard)");
+          return;
+        }
+        console.log("[match] create-match-game module loaded, creating Phaser.Game");
+        gameRef.current = createMatchGame(container);
+        console.log("[match] Phaser.Game instance created");
+      });
+    };
+
+    waitForSize();
 
     return () => {
-      cancelled = true;
-      gameRef.current?.destroy(true);
-      gameRef.current = null;
+      destroyed = true;
+      if (rafId !== null) cancelAnimationFrame(rafId);
+      // (c) true = also remove the canvas from the DOM, so navigating away
+      // and back never accumulates ghost instances competing for resources.
+      if (gameRef.current) {
+        console.log("[match] unmount: destroying Phaser.Game instance");
+        gameRef.current.destroy(true);
+        gameRef.current = null;
+      }
     };
   }, []);
 

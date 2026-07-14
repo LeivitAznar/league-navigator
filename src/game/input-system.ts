@@ -4,16 +4,20 @@ import { TouchButton, VirtualJoystick } from "@/game/virtual-joystick";
 /**
  * InputSystem
  * ------------------------------------------------------------------
- * Single source of truth for "what does the human player want to do right
- * now". No smoothing, no interpolation — every read reflects the current
- * hardware state so control feels immediate. Desktop (WASD/arrows + X/Space)
- * and touch (joystick + two independently-bound buttons) both funnel into
- * the same `getMoveVector()` / `consumePass()` / `consumeShoot()` API so the
- * rest of the game never needs to know which input method is active.
+ * Single source of truth for "what does the human player want right now".
+ * Desktop (WASD/arrows + X pass/Space shoot) and touch (joystick + two
+ * independently-bound buttons) both funnel into the same
+ * `getMoveVector()` / `wantsPass()` / `wantsShoot()` API. No smoothing here
+ * — that lives in MovementSystem's fixed-tick damping, not the input layer.
  */
 export class InputSystem {
   private cursors?: Phaser.Types.Input.Keyboard.CursorKeys;
-  private wasd?: { up: Phaser.Input.Keyboard.Key; down: Phaser.Input.Keyboard.Key; left: Phaser.Input.Keyboard.Key; right: Phaser.Input.Keyboard.Key };
+  private wasd?: {
+    up: Phaser.Input.Keyboard.Key;
+    down: Phaser.Input.Keyboard.Key;
+    left: Phaser.Input.Keyboard.Key;
+    right: Phaser.Input.Keyboard.Key;
+  };
   private passKey?: Phaser.Input.Keyboard.Key;
   private shootKey?: Phaser.Input.Keyboard.Key;
 
@@ -46,7 +50,7 @@ export class InputSystem {
     const isTouch = this.scene.sys.game.device.input.touch;
     if (!isTouch) return;
 
-    // Allow the joystick + a kick button to be held simultaneously.
+    // Required for the joystick and a kick button to be held simultaneously.
     this.scene.input.addPointer(2);
     this.scene.sys.game.canvas.style.touchAction = "none";
 
@@ -81,14 +85,12 @@ export class InputSystem {
     return { x, y };
   }
 
-  /** True while the shoot input is held (key or button). */
   wantsShoot(): boolean {
     const want = !!this.shootKey?.isDown || this.touchWantShoot;
     this.touchWantShoot = false;
     return want;
   }
 
-  /** True while the pass input is held (key or button). */
   wantsPass(): boolean {
     const want = !!this.passKey?.isDown || this.touchWantPass;
     this.touchWantPass = false;

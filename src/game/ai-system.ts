@@ -9,14 +9,14 @@ import type { Team } from "@/game/types";
 /**
  * AiSystem
  * ------------------------------------------------------------------
- * Decisions run every `AI.decisionEveryNFrames` real frames (not physics
- * ticks) to keep CPU cost down; movement input derived from those decisions
- * is still applied every frame via the normal MovementSystem path, so AI
- * players accelerate/decelerate with the same feel as the human.
+ * Decisions run every `AI.decisionEveryNFrames` render frames (not physics
+ * ticks) to keep CPU cost down; the movement input those decisions set is
+ * still applied every fixed physics tick via the normal path, so AI players
+ * accelerate/decelerate with the exact same feel as the human.
  *
- * Nearest-to-ball-per-team is precomputed once per decision cycle into a
- * Map *before* the per-player loop, so a player never compares distances
- * against itself or re-derives a stale "nearest" mid-loop.
+ * Nearest-to-ball-per-team is precomputed once per decision cycle into a Map
+ * *before* the per-player loop — a player never compares distances against
+ * itself or reads a stale "nearest" mid-loop.
  */
 export class AiSystem {
   constructor(private kickSystem: KickSystem) {}
@@ -30,8 +30,8 @@ export class AiSystem {
       let bestDist = Infinity;
       for (const p of players) {
         if (p.team !== team) continue;
-        const dx = ball.sprite.x - p.sprite.x;
-        const dy = ball.sprite.y - p.sprite.y;
+        const dx = ball.zone.x - p.zone.x;
+        const dy = ball.zone.y - p.zone.y;
         const d = Math.hypot(dx, dy);
         if (Number.isFinite(d) && d < bestDist) {
           bestDist = d;
@@ -57,10 +57,10 @@ export class AiSystem {
     const midY = FIELD_ORIGIN.y + FIELD.height / 2;
     const ownGoalX = p.team === "home" ? FIELD_ORIGIN.x + 26 : FIELD_ORIGIN.x + FIELD.width - 26;
     const ballInBox =
-      p.team === "home" ? ball.sprite.x < FIELD_ORIGIN.x + 130 : ball.sprite.x > FIELD_ORIGIN.x + FIELD.width - 130;
+      p.team === "home" ? ball.zone.x < FIELD_ORIGIN.x + 130 : ball.zone.x > FIELD_ORIGIN.x + FIELD.width - 130;
 
-    const targetX = ballInBox ? Phaser.Math.Linear(ownGoalX, ball.sprite.x, 0.35) : ownGoalX;
-    const targetY = Phaser.Math.Clamp(ball.sprite.y, midY - FIELD.goalWidth / 2 + 10, midY + FIELD.goalWidth / 2 - 10);
+    const targetX = ballInBox ? Phaser.Math.Linear(ownGoalX, ball.zone.x, 0.35) : ownGoalX;
+    const targetY = Phaser.Math.Clamp(ball.zone.y, midY - FIELD.goalWidth / 2 + 10, midY + FIELD.goalWidth / 2 - 10);
 
     this.moveToward(p, targetX, targetY);
 
@@ -68,15 +68,15 @@ export class AiSystem {
   }
 
   private chase(scene: Phaser.Scene, p: PlayerEntity, ball: BallEntity) {
-    this.moveToward(p, ball.sprite.x, ball.sprite.y);
+    this.moveToward(p, ball.zone.x, ball.zone.y);
 
     const opponentGoalX = p.team === "home" ? FIELD_ORIGIN.x + FIELD.width : FIELD_ORIGIN.x;
     const midY = FIELD_ORIGIN.y + FIELD.height / 2;
-    const distToBall = Math.hypot(ball.sprite.x - p.sprite.x, ball.sprite.y - p.sprite.y);
+    const distToBall = Math.hypot(ball.zone.x - p.zone.x, ball.zone.y - p.zone.y);
     if (distToBall <= PHYSICS.kickRange + PHYSICS.playerRadius + PHYSICS.ballRadius) {
-      const distToGoal = Math.hypot(opponentGoalX - p.sprite.x, midY - p.sprite.y);
+      const distToGoal = Math.hypot(opponentGoalX - p.zone.x, midY - p.zone.y);
       const shooting = distToGoal < 320;
-      p.facingAngle = Math.atan2(midY - p.sprite.y, opponentGoalX - p.sprite.x);
+      p.facingAngle = Math.atan2(midY - p.zone.y, opponentGoalX - p.zone.x);
       this.kickSystem.tryKick(
         scene,
         p,
@@ -94,13 +94,13 @@ export class AiSystem {
         ? FIELD_ORIGIN.x + FIELD.width * (attacking ? 0.55 : 0.3)
         : FIELD_ORIGIN.x + FIELD.width * (attacking ? 0.45 : 0.7);
     const roleOffsetY = p.role === "DEF" ? -60 : p.role === "MID" ? 0 : 60;
-    const targetY = Phaser.Math.Clamp(ball.sprite.y + roleOffsetY, FIELD_ORIGIN.y + 40, FIELD_ORIGIN.y + FIELD.height - 40);
+    const targetY = Phaser.Math.Clamp(ball.zone.y + roleOffsetY, FIELD_ORIGIN.y + 40, FIELD_ORIGIN.y + FIELD.height - 40);
     this.moveToward(p, baseX, targetY);
   }
 
   private moveToward(p: PlayerEntity, targetX: number, targetY: number) {
-    const dx = targetX - p.sprite.x;
-    const dy = targetY - p.sprite.y;
+    const dx = targetX - p.zone.x;
+    const dy = targetY - p.zone.y;
     const dist = Math.hypot(dx, dy);
 
     if (!Number.isFinite(dist) || dist < 4) {

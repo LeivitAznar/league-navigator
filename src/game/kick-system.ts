@@ -15,15 +15,14 @@ export interface KickFeedback {
 /**
  * KickSystem
  * ------------------------------------------------------------------
- * Deliberate pass/shot action (as opposed to the ambient push/deflect that
- * just happens from Matter's collision solver on any player-ball contact).
- * Always fired along the player's stored `facingAngle` — never auto-aimed
- * at goal or toward a pointer — plus a short lunge velocity boost in the
- * same direction so the kick has physical follow-through.
+ * Deliberate pass/shot action — always fired along the player's stored
+ * `facingAngle` (last movement direction, kept even when stationary), never
+ * auto-aimed at goal or a pointer. A short lunge velocity boost in the same
+ * direction is applied to the kicking player so the action has physical
+ * follow-through (Haxball's kickingAcceleration).
  *
- * Same reproducible-outcome requirement as collisions: given the same
- * distance/angle/cooldown state, a kick always produces the same ball
- * velocity — no randomness anywhere in this path.
+ * Deterministic on purpose: same distance/angle/cooldown state always
+ * produces the same ball velocity — no randomness anywhere in this path.
  */
 export class KickSystem {
   constructor(private feedback: KickFeedback) {}
@@ -31,8 +30,8 @@ export class KickSystem {
   tryKick(scene: Phaser.Scene, player: PlayerEntity, ball: BallEntity, kind: KickKind): boolean {
     if (scene.time.now - player.lastKickAt < PHYSICS.kickCooldownMs) return false;
 
-    const dx = ball.sprite.x - player.sprite.x;
-    const dy = ball.sprite.y - player.sprite.y;
+    const dx = ball.zone.x - player.zone.x;
+    const dy = ball.zone.y - player.zone.y;
     const dist = Math.hypot(dx, dy);
     if (!Number.isFinite(dist) || dist > PHYSICS.kickRange + PHYSICS.playerRadius + PHYSICS.ballRadius) {
       return false;
@@ -43,7 +42,7 @@ export class KickSystem {
     const vy = Math.sin(angle) * kind.speed;
     if (!Number.isFinite(vx) || !Number.isFinite(vy)) return false;
 
-    ball.sprite.setVelocity(vx, vy);
+    ball.body.setVelocity(vx, vy);
     ball.lastTouchedBy = player.team;
 
     player.lastKickAt = scene.time.now;
@@ -54,7 +53,7 @@ export class KickSystem {
       vy: Math.sin(angle) * PHYSICS.lungeSpeed,
     };
 
-    this.feedback.onKick(ball.sprite.x, ball.sprite.y, kind.isShot);
+    this.feedback.onKick(ball.zone.x, ball.zone.y, kind.isShot);
     return true;
   }
 }

@@ -18,25 +18,33 @@ export interface MatchSceneEvents {
  * MatchScene
  * ------------------------------------------------------------------
  * Orchestrator only: builds the field/entities, wires the systems together,
- * and drives the per-tick loop. All actual behavior (movement math, input
- * reading, kicking, collision bookkeeping, AI decisions) lives in its own
- * module — this file should never grow game *logic*, only wiring.
+ * and drives the fixed-timestep physics loop. All actual behavior (movement
+ * math, input reading, kicking, collision bookkeeping, AI decisions) lives
+ * in its own module — this file should never grow game *logic*, only wiring.
+ *
+ * Fixed timestep: `update(time, delta)` accumulates real elapsed time and
+ * runs `fixedPhysicsUpdate()` in whole 1000/60ms chunks, so the Haxball-style
+ * damping/acceleration recurrence is deterministic and decoupled from the
+ * device's actual frame rate (a slow device just runs more chunks per
+ * render frame, never a different simulation).
  */
 export class MatchScene extends Phaser.Scene {
   private players: PlayerEntity[] = [];
   private ball!: BallEntity;
-  private physicsManager!: PhysicsManager;
   private inputSystem!: InputSystem;
   private kickSystem!: KickSystem;
   private aiSystem!: AiSystem;
   private collisionSystem!: CollisionSystem;
+
+  private physicsAccumulator = 0;
+  private readonly FIXED_STEP = 1000 / 60;
 
   private frameCounter = 0;
   private score = { home: 0, away: 0 };
   private scoreText!: Phaser.GameObjects.Text;
   private events_: MatchSceneEvents;
 
-  // Reused scratch vectors (see performance notes: avoid per-tick allocation).
+  // Reused scratch vectors (avoid per-tick allocation / GC pressure).
   private scratchVec: Vec2 = { x: 0, y: 0 };
   private scratchInput: Vec2 = { x: 0, y: 0 };
 
@@ -46,13 +54,13 @@ export class MatchScene extends Phaser.Scene {
   }
 
   create() {
-    this.matter.world.setBounds(0, 0, CANVAS_W, CANVAS_H);
+    console.log("[match] MatchScene.create() starting");
 
     this.drawPitch();
 
-    this.physicsManager = new PhysicsManager(this);
-    this.physicsManager.buildWalls();
-    const goalSensors = this.physicsManager.buildGoalSensors();
+    const physicsManager = new PhysicsManager(this);
+    const wallZones = physicsManager.buildWalls();
+    const goalZones = physicsManager.buildGoalZones();
 
     this.spawnEntities();
 
@@ -60,7 +68,7 @@ export class MatchScene extends Phaser.Scene {
       onKick: (x, y, isShot) => this.kickFeedback(x, y, isShot),
     });
     this.aiSystem = new AiSystem(this.kickSystem);
-    this.collisionSystem = new CollisionSystem(this, this.ball, this.players, goalSensors, {
+    this.collisionSystem = new CollisionSystem(this, this.ball, this.players, wallZones, goalZones, {
       onGoal: (team) => this.onGoalScored(team),
     });
     this.inputSystem = new InputSystem(this);
@@ -70,22 +78,17 @@ export class MatchScene extends Phaser.Scene {
       .setOrigin(0.5, 0)
       .setDepth(1000);
 
-    // Fixed-timestep movement/damping, applied on every internal Matter
-    // physics step (Matter world config pins this to 60Hz — see config.ts),
-    // decoupled from render frame rate.
-    this.matter.world.on("beforeupdate", this.onPhysicsStep, this);
-
-    // Minimap: added last, after every player/ball container already
-    // exists, per the known Phaser render-tracking bug when a second camera
-    // is introduced before those objects exist.
+    // Minimap added last, after every player/ball container already exists —
+    // see PlayerEntity/BallEntity doc comments for the render-tracking bug
+    // this avoids.
     this.setupMinimap();
 
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => this.teardown());
+
+    console.log("[match] MatchScene.create() finished — first scene started");
   }
 
   private teardown() {
-    this.matter.world.off("beforeupdate", this.onPhysicsStep, this);
-    this.collisionSystem.destroy();
     this.inputSystem.destroy();
   }
 
@@ -112,6 +115,7 @@ export class MatchScene extends Phaser.Scene {
   }
 
   private formationSpawns(): PlayerSpawn[] {
+    // 4v4: 1 GK + 3 field players per team, normalized formation mirrored for the away side.
     const layout: { role: Role; nx: number; ny: number }[] = [
       { role: "GK", nx: -0.92, ny: 0 },
       { role: "DEF", nx: -0.5, ny: 0 },
@@ -160,33 +164,27 @@ export class MatchScene extends Phaser.Scene {
   }
 
   /**
-   * Runs once per fixed Matter physics step (independent of render FPS).
-   * This is where MovementSystem applies input+damping to every body's
-   * velocity, right before Matter integrates positions and resolves
-   * collisions for this step.
+   * Runs in fixed 1000/60ms chunks (see update() below). Applies the
+   * Haxball-style manual damping+acceleration recurrence directly to each
+   * body's velocity; Arcade's own per-frame integration and collision solver
+   * take it from there (this function never touches position).
    */
-  private onPhysicsStep = () => {
+  private fixedPhysicsUpdate() {
     const now = this.time.now;
 
     for (const p of this.players) {
-      let ix = p.input.x;
-      let iy = p.input.y;
-
-      if (p.lunge.active) {
-        if (now >= p.lunge.until) {
-          p.lunge.active = false;
-        }
+      if (p.lunge.active && now >= p.lunge.until) {
+        p.lunge.active = false;
       }
 
       stepPlayerVelocity(
         this.scratchVec,
         p.body.velocity.x,
         p.body.velocity.y,
-        ix,
-        iy,
+        p.input.x,
+        p.input.y,
         PHYSICS.playerDamping,
         PHYSICS.playerAccelPerTick,
-        PHYSICS.playerMaxSpeed,
       );
 
       let vx = this.scratchVec.x;
@@ -196,28 +194,28 @@ export class MatchScene extends Phaser.Scene {
         vy += p.lunge.vy;
       }
 
-      p.sprite.setVelocity(vx, vy);
+      p.body.setVelocity(vx, vy);
     }
 
-    stepBallVelocity(this.scratchVec, this.ball.body.velocity.x, this.ball.body.velocity.y, PHYSICS.ballDamping, PHYSICS.ballMaxSpeed);
-    this.ball.sprite.setVelocity(this.scratchVec.x, this.scratchVec.y);
-  };
+    stepBallVelocity(this.scratchVec, this.ball.body.velocity.x, this.ball.body.velocity.y, PHYSICS.ballDamping);
+    this.ball.body.setVelocity(this.scratchVec.x, this.scratchVec.y);
+  }
 
-  update(_time: number, _delta: number) {
+  update(_time: number, delta: number) {
     this.frameCounter++;
+
+    this.physicsAccumulator += delta;
+    while (this.physicsAccumulator >= this.FIXED_STEP) {
+      this.fixedPhysicsUpdate();
+      this.physicsAccumulator -= this.FIXED_STEP;
+    }
 
     const human = this.players.find((p) => p.isHuman);
     if (human) {
       const move = this.inputSystem.getMoveVector();
       normalizeInput(this.scratchInput, move.x, move.y);
-      // Joystick already reports a magnitude-aware vector (partial
-      // deflection = partial speed); keyboard is always full magnitude.
-      // Use the raw vector's magnitude when it's a joystick read (<=1) but
-      // never let a keyboard diagonal exceed unit length (handled by
-      // InputSystem itself), so just reuse `move` directly instead of the
-      // forcibly-normalized one for magnitude-sensitive joystick control.
-      human.input.x = move.x;
-      human.input.y = move.y;
+      human.input.x = this.scratchInput.x;
+      human.input.y = this.scratchInput.y;
 
       if (move.x !== 0 || move.y !== 0) {
         human.facingAngle = Math.atan2(move.y, move.x);
@@ -244,14 +242,15 @@ export class MatchScene extends Phaser.Scene {
   /** Safety net: recover any body that went NaN/Infinity back to its spawn. */
   private sanitizeBodies() {
     for (const p of this.players) {
+      if (!p.body) continue;
       const v = p.body.velocity;
-      if (!Number.isFinite(p.sprite.x) || !Number.isFinite(p.sprite.y) || !Number.isFinite(v.x) || !Number.isFinite(v.y)) {
-        p.sprite.setPosition(p.spawnX, p.spawnY);
-        p.sprite.setVelocity(0, 0);
+      if (!Number.isFinite(p.zone.x) || !Number.isFinite(p.zone.y) || !Number.isFinite(v.x) || !Number.isFinite(v.y)) {
+        p.body.reset(p.spawnX, p.spawnY);
       }
     }
+    if (!this.ball.body) return;
     const bv = this.ball.body.velocity;
-    if (!Number.isFinite(this.ball.sprite.x) || !Number.isFinite(this.ball.sprite.y) || !Number.isFinite(bv.x) || !Number.isFinite(bv.y)) {
+    if (!Number.isFinite(this.ball.zone.x) || !Number.isFinite(this.ball.zone.y) || !Number.isFinite(bv.x) || !Number.isFinite(bv.y)) {
       this.resetBallToCenter();
     }
   }
@@ -288,20 +287,18 @@ export class MatchScene extends Phaser.Scene {
 
   private resetKickoff() {
     for (const p of this.players) {
-      if (!p.sprite.body) continue;
-      p.sprite.setPosition(p.spawnX, p.spawnY);
-      p.sprite.setVelocity(0, 0);
+      if (!p.body) continue;
+      p.body.reset(p.spawnX, p.spawnY);
       p.lunge.active = false;
     }
     this.resetBallToCenter();
   }
 
   private resetBallToCenter() {
-    if (!this.ball.sprite.body) return;
+    if (!this.ball.body) return;
     const fieldW = CANVAS_W - FIELD_ORIGIN.x * 2;
     const fieldH = CANVAS_H - FIELD_ORIGIN.y * 2;
-    this.ball.sprite.setPosition(FIELD_ORIGIN.x + fieldW / 2, FIELD_ORIGIN.y + fieldH / 2);
-    this.ball.sprite.setVelocity(0, 0);
+    this.ball.body.reset(FIELD_ORIGIN.x + fieldW / 2, FIELD_ORIGIN.y + fieldH / 2);
     this.ball.lastTouchedBy = null;
   }
 

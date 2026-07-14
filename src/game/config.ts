@@ -1,21 +1,10 @@
 import Phaser from "phaser";
 
-/**
- * Matter world configuration. Gravity is off (top-down field). Iteration
- * counts are raised above Matter's defaults (6/4/2) so contact resolution
- * stays stable under fast player/ball collisions — this is what the spec
- * calls out explicitly ("iteraciones del solver") to avoid jitter, tunneling,
- * or bodies getting stuck against each other.
- */
-export const MATTER_WORLD_CONFIG = {
+/** Top-down field: no gravity. Debug off (visual physics outlines add noise). */
+export const ARCADE_WORLD_CONFIG: Phaser.Types.Physics.Arcade.ArcadeWorldConfig = {
   gravity: { x: 0, y: 0 },
   debug: false,
-  enableSleeping: false, // bodies must always be responsive, never idle-sleep
-  positionIterations: 10,
-  velocityIterations: 10,
-  constraintIterations: 4,
-  fps: 60,
-} as const;
+};
 
 export function buildGameConfig(
   parent: HTMLElement,
@@ -34,8 +23,8 @@ export function buildGameConfig(
       autoCenter: Phaser.Scale.CENTER_BOTH,
     },
     physics: {
-      default: "matter",
-      matter: MATTER_WORLD_CONFIG,
+      default: "arcade",
+      arcade: ARCADE_WORLD_CONFIG,
     },
     input: {
       activePointers: 3,

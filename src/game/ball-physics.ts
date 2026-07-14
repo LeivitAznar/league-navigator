@@ -1,58 +1,46 @@
-import Phaser from "phaser";
-import { COLLISION, PHYSICS } from "@/game/constants";
+import type Phaser from "phaser";
+import { PHYSICS } from "@/game/constants";
 import type { Team } from "@/game/types";
 
 /**
- * BallPhysics
+ * BallEntity
  * ------------------------------------------------------------------
- * The ball: a Matter Sprite (physics only) + Container (white disc). Same
- * fixed-rotation treatment as players, for the same reason (no rendered
- * spin, so no gameplay reason to allow it, and it removes a class of
- * spin-driven instability from the solver).
- *
- * Wall/player restitution differ (see constants.ts), so the ball is created
- * with the *wall* restitution by default; the collision system nudges the
- * effective bounce for player contacts if needed (kept simple: a single
- * restitution value is used, tuned as a compromise, since Matter applies
- * one restitution per contact — see collision-system.ts for the split
- * approach if finer control is required later).
+ * Same invisible-Zone + visual-Container split as PlayerEntity (see that
+ * file's doc comment for why). `lastTouchedBy` is used by AiSystem for
+ * possession-aware positioning and updated by CollisionSystem on contact.
  */
 export class BallEntity {
-  sprite: Phaser.Physics.Matter.Sprite;
-  container: Phaser.GameObjects.Container;
+  readonly zone: Phaser.GameObjects.Zone;
+  readonly container: Phaser.GameObjects.Container;
   lastTouchedBy: Team | null = null;
 
   constructor(scene: Phaser.Scene, x: number, y: number) {
-    this.sprite = scene.matter.add.sprite(x, y, "", undefined, {
-      shape: { type: "circle", radius: PHYSICS.ballRadius },
-      friction: PHYSICS.friction,
-      frictionStatic: PHYSICS.frictionStatic,
-      frictionAir: 0,
-      restitution: PHYSICS.ballRestitutionWall,
-      collisionFilter: {
-        category: COLLISION.BALL,
-        mask: COLLISION.PLAYER | COLLISION.WALL | COLLISION.GOAL_SENSOR,
-      },
-    });
-    this.sprite.setVisible(false);
-    this.sprite.setFixedRotation();
-    this.sprite.setMass(PHYSICS.ballMass);
+    this.zone = scene.add.zone(x, y, PHYSICS.ballRadius * 2, PHYSICS.ballRadius * 2);
+    scene.physics.add.existing(this.zone);
 
-    const g = scene.add.graphics();
-    g.fillStyle(0xffffff, 1);
-    g.lineStyle(1.5, 0x1a1a1a, 0.7);
-    g.fillCircle(0, 0, PHYSICS.ballRadius);
-    g.strokeCircle(0, 0, PHYSICS.ballRadius);
+    const body = this.body;
+    body.setCircle(PHYSICS.ballRadius);
+    body.mass = PHYSICS.ballMass;
+    body.setBounce(PHYSICS.ballBounceWall);
+    body.setAllowGravity(false);
 
-    this.container = scene.add.container(x, y, [g]);
-    this.container.setDepth(20);
+    const shadow = scene.add.ellipse(0, 4, PHYSICS.ballRadius * 1.5, PHYSICS.ballRadius * 0.7, 0x000000, 0.3);
+    const disc = scene.add.circle(0, 0, PHYSICS.ballRadius, 0xffffff).setStrokeStyle(1.5, 0x111111, 0.6);
+
+    this.container = scene.add.container(x, y, [shadow, disc]);
+    this.container.setDepth(25);
   }
 
-  get body(): MatterJS.BodyType {
-    return this.sprite.body as MatterJS.BodyType;
+  get body(): Phaser.Physics.Arcade.Body {
+    return this.zone.body as Phaser.Physics.Arcade.Body;
   }
 
   syncVisual(): void {
-    this.container.setPosition(this.sprite.x, this.sprite.y);
+    this.container.setPosition(this.zone.x, this.zone.y);
+  }
+
+  destroy(): void {
+    this.zone.destroy();
+    this.container.destroy();
   }
 }

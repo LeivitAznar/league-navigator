@@ -1,0 +1,137 @@
+IMPORTANTE — ESTO ES UNA RECONSTRUCCIÓN COMPLETA, NO UN PARCHE:
+El motor de juego actual (todo lo relacionado a Phaser: física, jugadores, IA, sistema de patada) tiene demasiadas capas de parches acumulados de sesiones anteriores y el resultado es una jugabilidad mala e inconsistente. Por favor:
+1. Identificá todos los archivos relacionados al motor de Phaser (physics, escenas del juego, IA, configuración de sprites/jugadores)
+2. BORRÁ por completo su contenido y reescribilos desde cero siguiendo ÚNICAMENTE las especificaciones de abajo
+3. NO reutilices ni "mejores" código existente de esos archivos — empezá en blanco
+4. NO toques nada de la UI de React/rutas/componentes de menú, carrera, tabla, etc. — solo el motor del partido en sí
+
+Actuá como un ingeniero senior de 25 años de experiencia en motores de física 2D para juegos deportivos, con Haxball como referencia técnica exacta. Vamos a construir el sistema de juego desde cero.
+
+===========================================
+SECCIÓN 0 — FIX DE CARGA DE PARTIDOS (antes que nada)
+===========================================
+El síntoma reportado ("a veces no carga el partido, a veces tarda mucho") en una integración Phaser+React casi siempre tiene UNA de estas causas — revisá y arreglá TODAS:
+
+a) DOBLE MONTAJE POR REACT STRICTMODE: en desarrollo, React 18 con StrictMode ejecuta los efectos de montaje DOS VECES. Si el juego Phaser se crea dentro de un useEffect sin guard, se crean DOS instancias de Phaser.Game compitiendo por el mismo canvas — esto explica perfectamente por qué a veces "no carga" (las dos instancias pelean por el DOM) y a veces "tarda" (una se destruye a medias mientras la otra intenta iniciar). FIX obligatorio:
+
+useEffect(() => {
+  let game: Phaser.Game | null = null;
+  let destroyed = false;
+
+  if (!gameInstanceRef.current) {
+    game = new Phaser.Game(config);
+    gameInstanceRef.current = game;
+  }
+
+  return () => {
+    destroyed = true;
+    if (gameInstanceRef.current) {
+      gameInstanceRef.current.destroy(true);
+      gameInstanceRef.current = null;
+    }
+  };
+}, []); // array de dependencias VACÍO — nunca recrear por cambios de props
+
+b) DATOS DE PARTIDO NO LISTOS ANTES DE INICIAR LA ESCENA: si matchData (equipos, jugadores, stats) se lee de forma async (fetch, estado de carrera) pero la escena de Phaser arranca antes de que esos datos estén disponibles, la escena puede fallar silenciosamente o quedar en loop de espera. FIX: agregar un estado de loading explícito en el componente React que NO renderiza el contenedor de Phaser hasta que matchData esté 100% listo, con un timeout de seguridad (ej: si pasan 8 segundos sin datos, mostrar error explícito en vez de spinner infinito).
+
+c) MÚLTIPLES INSTANCIAS DE PHASER.GAME ACUMULADAS: si el usuario navega entre pantallas (menú → partido → menú → partido) varias veces sin que la instancia anterior se destruya correctamente (game.destroy(true) con el parámetro true para remover también el canvas del DOM), cada vez queda más lento por instancias fantasma consumiendo recursos. Confirmá que TODA navegación fuera de la pantalla de partido dispara la destrucción completa de la instancia anterior.
+
+d) CONFIG DE PHASER MAL DIMENSIONADA: si el div contenedor (match-canvas-root) no tiene un tamaño definido en el momento en que Phaser lee sus dimensiones (por ejemplo si el CSS todavía no aplicó layout), Phaser puede inicializar con dimensiones 0x0 y quedar "colgado". FIX: usar Phaser.Scale.RESIZE con el contenedor ya montado y medido (getBoundingClientRect) antes de instanciar el juego, no en el mismo tick de render.
+
+Implementá un log de consola temporal en cada etapa (mount, datos listos, Phaser.Game creado, primera escena iniciada) para que puedas confirmar en qué paso específico se traba cuando "tarda mucho" o "no carga".
+
+===========================================
+SECCIÓN 1 — FÍSICA HAXBALL (valores reales, recalibrados MÁS LENTO)
+===========================================
+Haxball corre a 60Hz con estos valores documentados por la comunidad (stadium "Classic"):
+- Jugador: radio 15, bCoef 0.5, invMass 0.5 (masa 2), damping 0.96/tick (MULTIPLICATIVO, no lineal), acceleration 0.1/tick
+- Pelota: radio 10, bCoef 0.5, damping 0.99/tick, invMass 1 (masa 1)
+- Ratio de masa jugador:pelota = 2:1
+
+IMPORTANTE — CALIBRACIÓN DE VELOCIDAD PARA ESTE PROYECTO: las versiones anteriores quedaron demasiado rápidas y la jugabilidad se sintió mal por eso. Esta vez calibrá para una velocidad NOTABLEMENTE MÁS LENTA Y CONTROLABLE:
+
+export const PLAYER_MAX_VEL_TARGET = 118; // px/s en equilibrio — lento y controlable, NO subir este número
+export const PLAYER_DAMPING = 0.96;       // directo de Haxball, no cambiar
+export const BALL_DAMPING   = 0.985;      // pelota rueda con fricción moderada, ni eterna ni corta
+
+Con damping 0.96/tick a 60Hz, la velocidad de equilibrio es accel/(1-damping) = accel*25. Para lograr 118 px/s: accel_per_tick ≈ 118/25/60 ≈ 0.0787 (ajustar empíricamente ±15%, PERO el objetivo final debe sentirse claramente más lento y "pesado" que las versiones anteriores, priorizá control sobre velocidad).
+
+IMPLEMENTACIÓN — fixed timestep obligatorio (desacopla física de FPS del dispositivo):
+
+private physicsAccumulator = 0;
+private readonly FIXED_STEP = 1000 / 60;
+
+update(time: number, delta: number) {
+  this.physicsAccumulator += delta;
+  while (this.physicsAccumulator >= this.FIXED_STEP) {
+    this.fixedPhysicsUpdate(this.FIXED_STEP / 1000);
+    this.physicsAccumulator -= this.FIXED_STEP;
+  }
+  this.syncVisuals();
+}
+
+Dentro de fixedPhysicsUpdate(), aplicar el damping MULTIPLICATIVO manualmente (no usar setDrag() lineal de Arcade):
+
+player.body.velocity.x *= PLAYER_DAMPING;
+player.body.velocity.y *= PLAYER_DAMPING;
+player.body.velocity.x += inputVector.x * PLAYER_ACCEL_PER_TICK;
+player.body.velocity.y += inputVector.y * PLAYER_ACCEL_PER_TICK;
+
+ball.body.velocity.x *= BALL_DAMPING;
+ball.body.velocity.y *= BALL_DAMPING;
+
+MASAS: player mass = 2.2, ball mass = 1.
+REBOTES: player-vs-player bounce ~0.08 (suave), ball vs paredes/postes bounce ~0.6 (vivo pero no exagerado).
+
+===========================================
+SECCIÓN 2 — ARQUITECTURA DE VISUALES (obligatorio, evita bug conocido)
+===========================================
+Los jugadores se representan SIEMPRE como:
+- Un sprite de física invisible (alpha 0) que maneja SOLO colisión y velocidad — nunca se dibuja
+- Un Phaser.GameObjects.Container (con Graphics de círculo + sombra + Text de número + Text de nombre adentro) que se reposiciona cada frame de render con UNA sola línea: container.setPosition(sprite.x, sprite.y)
+
+PROHIBIDO usar Phaser.GameObjects.Arc sueltos para los jugadores — en Phaser 3.90 pierden su render tracking cuando se agrega una segunda cámara (minimapa) después de crearlos, causando que desaparezcan tras el primer frame. El Container es inmune a esto porque se renderiza como unidad atómica.
+
+===========================================
+SECCIÓN 3 — SISTEMA DE PATADA (pase + tiro con lunge)
+===========================================
+- PASE: fuerza fija ~230 px/s (recalibrado más lento acorde a la Sección 1)
+- TIRO: fuerza fija ~400 px/s
+- Ambas solo conectan si el jugador está dentro de KICK_RANGE (~35px), en dirección del facingAngle (último ángulo de movimiento, guardado incluso cuando el jugador está quieto)
+- LUNGE: impulso extra breve (~45 px/s, ~100ms) al jugador en la dirección de la patada — simula el cuerpo lanzándose hacia la pelota, inspirado en el kickingAcceleration real de Haxball
+- Feedback visual: anillo que aparece/desvanece en el punto de contacto + squash&stretch en la pelota (escala no uniforme volviendo a 1,1 con Back.easeOut)
+
+===========================================
+SECCIÓN 4 — IA (con fixes de bugs conocidos)
+===========================================
+- Precalcular "jugador más cercano a la pelota por equipo" en un Map ANTES del loop principal — nunca comparar un jugador contra sí mismo dentro del mismo loop
+- NaN guards obligatorios: todo ángulo/distancia calculado debe pasar por Number.isFinite() antes de aplicarse a setVelocity()
+- Arquero: cubre su línea, sale si la pelota entra al área, despeja al centro
+- Resto: el más cercano persigue y patea, los demás se posicionan según rol (defensivo/ofensivo)
+
+===========================================
+SECCIÓN 5 — CONTROLES (desktop + móvil)
+===========================================
+- Desktop: WASD/flechas, X = pase, Espacio = tiro
+- Móvil: joystick virtual (inferior izquierda) + botones TIRO/PASE (inferior derecha), alimentando la MISMA función de movimiento/patada que el teclado
+- this.input.addPointer(2) obligatorio para multi-touch simultáneo (joystick + botón a la vez)
+
+===========================================
+SECCIÓN 6 — FORMATO Y SEGURIDAD
+===========================================
+- 4v4 (1 arquero + 3 de campo por equipo), formación normalizada con mirror automático para visitante
+- sanitizeBody(): corre cada frame, recupera cualquier sprite con posición NaN a su spawn point
+- resetPositions() al marcar gol: SIEMPRE verificar if (p.body) antes de llamar métodos de velocidad
+
+===========================================
+ORDEN DE IMPLEMENTACIÓN
+===========================================
+1. Sección 0 (fix de carga) — validar que el partido carga consistentemente ANTES de tocar física
+2. Sección 1 (física fixed-timestep + damping multiplicativo, velocidad lenta calibrada)
+3. Sección 2 (Container+Graphics para visuales)
+4. Sección 3 (patada + lunge)
+5. Sección 4 (IA con fixes)
+6. Sección 5 (controles)
+7. Sección 6 (4v4 + seguridad)
+
+Jugá un partido completo de prueba después de cada sección antes de seguir a la siguiente. Si algo de esto ya existe en el código actual, IGUAL reescribilo desde cero según esta especificación — no asumas que el código viejo es un buen punto de partida.
