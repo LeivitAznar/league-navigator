@@ -1,0 +1,353 @@
+Este es un prompt pensado para pegar directamente en Replit AI. Está orientado a **Phaser** y a que el agente **reconstruya la física y el gameplay** inspirándose en HaxBall, sin copiar código ni recursos del juego original. HaxBall se caracteriza por una jugabilidad tipo "fútbol + air hockey", con controles simples y un fuerte énfasis en la habilidad del jugador. ([HaxBall][1]) Además, Phaser ofrece tanto Arcade Physics como Matter Physics; para un juego de este estilo conviene usar **Matter Physics**, porque permite un control más fino de masas, fricción, restitución y colisiones. ([Phaser Documentation][2])
+
+---
+
+# PROMPT
+
+Eres un Lead Gameplay Engineer con más de 25 años de experiencia desarrollando videojuegos competitivos. Has trabajado diseñando motores de físicas para juegos deportivos arcade y tu prioridad absoluta es conseguir una jugabilidad extremadamente precisa, consistente y divertida.
+
+Quiero rehacer completamente la física de mi juego de fútbol 2D desarrollado en Phaser utilizando Matter Physics.
+
+No quiero parches.
+
+No quiero pequeños ajustes.
+
+Quiero reconstruir todo el sistema de físicas desde cero.
+
+El objetivo es conseguir una sensación prácticamente idéntica a la de HaxBall en cuanto a respuesta de controles, rebotes, contacto con la pelota, velocidad, aceleración y precisión, manteniendo código limpio y modular.
+
+Analiza primero todo el proyecto antes de escribir código.
+
+No rompas ninguna funcionalidad existente que no esté relacionada con la física.
+
+Si necesitas modificar arquitectura, hazlo correctamente.
+
+No generes soluciones rápidas.
+
+Quiero calidad profesional.
+
+## OBJETIVO PRINCIPAL
+
+La jugabilidad debe sentirse extremadamente fluida.
+
+Cada movimiento debe responder inmediatamente al jugador.
+
+No quiero sensación de input lag.
+
+El movimiento debe sentirse preciso.
+
+El control debe premiar la habilidad del jugador.
+
+Quiero que el gameplay tenga la sensación de "un minuto para aprender y años para dominar".
+
+## MOTOR
+
+Usar Phaser con Matter Physics.
+
+No utilizar Arcade Physics para el gameplay principal porque necesito control total sobre masas, colisiones, rebotes y respuesta física.
+
+## FILOSOFÍA DEL GAMEPLAY
+
+La física debe sentirse:
+
+* arcade
+* muy precisa
+* muy consistente
+* muy competitiva
+* fácil de aprender
+* difícil de dominar
+
+Nunca debe sentirse pesada.
+
+Nunca debe sentirse resbaladiza.
+
+Nunca debe sentirse aleatoria.
+
+Nunca debe sentirse lenta.
+
+## MOVIMIENTO DEL JUGADOR
+
+Reconstruir completamente el movimiento.
+
+Debe incluir:
+
+aceleración progresiva
+
+desaceleración suave
+
+velocidad máxima limitada
+
+cambio instantáneo de dirección
+
+micro ajustes muy precisos
+
+sin inercia exagerada
+
+sin deslizamiento excesivo
+
+sin sensación de hielo
+
+el jugador debe detenerse rápidamente al soltar las teclas
+
+movimiento completamente responsivo
+
+movimiento idéntico en todas las direcciones
+
+velocidad diagonal correctamente normalizada
+
+## INPUT
+
+Los controles deben tener prioridad absoluta.
+
+Cada input debe responder inmediatamente.
+
+No debe existir delay perceptible.
+
+No usar interpolaciones innecesarias.
+
+No suavizar el input.
+
+El jugador siempre debe sentir control absoluto.
+
+## COLISIONES
+
+Las colisiones deben rehacerse completamente.
+
+Jugador vs jugador
+
+Jugador vs pelota
+
+Pelota vs pared
+
+Jugador vs pared
+
+Pelota vs arco
+
+Las colisiones deben ser totalmente estables.
+
+No permitir atravesar objetos.
+
+No permitir vibraciones.
+
+No permitir cuerpos atascados.
+
+No permitir rebotes inconsistentes.
+
+Resolver correctamente todos los casos extremos.
+
+## PELOTA
+
+La pelota es el elemento más importante.
+
+Debe sentirse viva.
+
+Nunca pesada.
+
+Nunca flotante.
+
+Debe tener:
+
+masa correctamente calibrada
+
+rebotes consistentes
+
+velocidad máxima
+
+fricción adecuada
+
+rebote contra paredes
+
+rebote contra jugadores
+
+conservación natural del impulso
+
+pérdida gradual de velocidad
+
+rodamiento natural
+
+sin movimientos erráticos
+
+sin vibraciones
+
+sin rebotes impredecibles
+
+## CONTACTO CON LA PELOTA
+
+El contacto entre jugador y pelota debe ser extremadamente preciso.
+
+Quiero que se puedan hacer:
+
+toques suaves
+
+empujes
+
+bloqueos
+
+rebotes
+
+desvíos
+
+cambios de dirección
+
+protección de pelota
+
+giros rápidos
+
+juego de primera
+
+dominio preciso
+
+Todo debe depender de:
+
+ángulo
+
+velocidad
+
+posición
+
+dirección del jugador
+
+velocidad relativa
+
+masa
+
+momento del impacto
+
+## CHUTE
+
+El disparo debe ser completamente reconstruido.
+
+Debe considerar:
+
+dirección del jugador
+
+posición exacta de la pelota
+
+velocidad previa
+
+potencia
+
+ángulo
+
+impulso
+
+Debe sentirse potente.
+
+Debe permitir tiros fuertes.
+
+Tiros suaves.
+
+Cambios de dirección.
+
+Remates rápidos.
+
+## REBOTES
+
+Los rebotes deben ser totalmente consistentes.
+
+No usar números aleatorios.
+
+Toda colisión debe ser reproducible.
+
+La misma situación debe producir el mismo resultado.
+
+## FÍSICAS
+
+Ajustar cuidadosamente:
+
+masa
+
+densidad
+
+fricción
+
+fricción del aire
+
+coeficiente de restitución
+
+damping
+
+impulso
+
+velocidad máxima
+
+fuerzas
+
+colisiones
+
+resolución de contactos
+
+iteraciones del solver
+
+Todo debe estar calibrado para obtener gameplay competitivo.
+
+## CÓDIGO
+
+Separar claramente:
+
+PhysicsManager
+
+PlayerPhysics
+
+BallPhysics
+
+CollisionSystem
+
+KickSystem
+
+MovementSystem
+
+InputSystem
+
+Constants
+
+Config
+
+No mezclar lógica.
+
+No duplicar código.
+
+Todo modular.
+
+Todo documentado.
+
+## RENDIMIENTO
+
+Optimizar para 60 FPS estables.
+
+Evitar cálculos innecesarios.
+
+Evitar crear objetos cada frame.
+
+Reutilizar vectores.
+
+Reducir garbage collection.
+
+Mantener determinismo.
+
+## PROCESO DE TRABAJO
+
+Antes de modificar código:
+
+1. Analiza todo el proyecto.
+2. Detecta problemas.
+3. Explica exactamente qué cambiarás.
+4. Haz un plan.
+5. Luego implementa.
+
+Nunca modifiques archivos innecesarios.
+
+Nunca reescribas sistemas que ya funcionan.
+
+## OBJETIVO FINAL
+
+Cuando el jugador juegue debe pensar inmediatamente:
+
+"Esto se siente tan preciso y adictivo como HaxBall."
+
+No quiero una copia visual.
+
+Quiero replicar la sensación de control, precisión, competitividad y calidad del gameplay, utilizando una implementación original en Phaser con Matter Physics. Basá las decisiones en buenas prácticas del motor (masas, fricción, damping, restitución y colisiones) para obtener una física estable y consistente. ([Phaser Documentation][2])
+
+[1]: https://html5.haxball.com/about?utm_source=chatgpt.com "Haxball About"
+[2]: https://docs.phaser.io/phaser/concepts/physics/matter?utm_source=chatgpt.com "Matter Physics | Phaser Help"
