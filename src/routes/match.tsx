@@ -33,7 +33,10 @@ export const Route = createFileRoute("/match")({
 function MatchView() {
   const { mode } = Route.useSearch();
   const navigate = useNavigate();
-  const fx = nextFixture()!;
+  const fx = nextFixture();
+  if (!fx) {
+    return <NoFixtureScreen onBack={() => navigate({ to: "/career" })} />;
+  }
   const home = clubById(fx.home);
   const away = clubById(fx.away);
   const isUserHome = fx.home === USER_CLUB_ID;
@@ -50,6 +53,30 @@ function MatchView() {
         isUserHome={isUserHome}
         onContinue={() => navigate({ to: "/career" })}
       />
+    );
+  }
+
+  function NoFixtureScreen({ onBack }: { onBack: () => void }) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-black px-4">
+        <div className="w-full max-w-xl border border-border panel p-8 text-center sm:p-12">
+          <div className="font-display text-[10px] font-bold uppercase tracking-[0.3em] text-muted-foreground">
+            Partido no disponible
+          </div>
+          <div className="mt-3 font-display text-2xl font-bold uppercase text-foreground">
+            No hay un próximo partido para iniciar.
+          </div>
+          <p className="mt-4 text-sm text-muted-foreground">
+            Volvé al modo carrera para avanzar o revisar el calendario.
+          </p>
+          <button
+            onClick={onBack}
+            className="mt-8 w-full border border-accent bg-accent px-6 py-3 font-display text-sm font-bold uppercase tracking-widest text-accent-foreground hover:brightness-110"
+          >
+            Volver a carrera
+          </button>
+        </div>
+      </div>
     );
   }
 

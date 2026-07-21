@@ -23,9 +23,9 @@ export const Route = createFileRoute("/career/")({
 });
 
 function CareerHub() {
-  const next = nextFixture()!;
-  const nextHome = clubById(next.home);
-  const nextAway = clubById(next.away);
+  const next = nextFixture();
+  const nextHome = next ? clubById(next.home) : null;
+  const nextAway = next ? clubById(next.away) : null;
   const table = tableSorted();
   const userPos = table.findIndex((r) => r.clubId === USER_CLUB_ID) + 1;
   const userRow = table.find((r) => r.clubId === USER_CLUB_ID)!;
@@ -44,50 +44,74 @@ function CareerHub() {
       <div className="grid gap-6 lg:grid-cols-[1.5fr_1fr]">
         {/* NEXT MATCH — hero card */}
         <section className="relative overflow-hidden border border-border panel">
-          <div
-            className="absolute inset-0 opacity-40"
-            style={{
-              background: `linear-gradient(115deg, ${nextHome.color}55 0%, transparent 45%, ${nextAway.color}55 100%)`,
-            }}
-          />
-          <div className="relative p-6 sm:p-8">
-            <div className="flex items-center justify-between font-display text-[10px] font-bold uppercase tracking-[0.3em] text-muted-foreground">
-              <span>Próximo Partido · Fecha {next.round}</span>
-              <span>{new Date(next.date).toLocaleDateString("es-AR", { day: "2-digit", month: "short" })}</span>
-            </div>
-
-            <div className="mt-8 grid grid-cols-[1fr_auto_1fr] items-center gap-4">
-              <TeamBlock club={nextHome} home />
-              <div className="text-center font-display">
-                <div className="text-4xl font-bold uppercase text-muted-foreground/80 sm:text-5xl">
-                  VS
+          {next && nextHome && nextAway ? (
+            <>
+              <div
+                className="absolute inset-0 opacity-40"
+                style={{
+                  background: `linear-gradient(115deg, ${nextHome.color}55 0%, transparent 45%, ${nextAway.color}55 100%)`,
+                }}
+              />
+              <div className="relative p-6 sm:p-8">
+                <div className="flex items-center justify-between font-display text-[10px] font-bold uppercase tracking-[0.3em] text-muted-foreground">
+                  <span>Próximo Partido · Fecha {next.round}</span>
+                  <span>{new Date(next.date).toLocaleDateString("es-AR", { day: "2-digit", month: "short" })}</span>
                 </div>
-                <div className="mt-2 text-[10px] uppercase tracking-widest text-muted-foreground">
-                  Estadio Monumental
+
+                <div className="mt-8 grid grid-cols-[1fr_auto_1fr] items-center gap-4">
+                  <TeamBlock club={nextHome} home />
+                  <div className="text-center font-display">
+                    <div className="text-4xl font-bold uppercase text-muted-foreground/80 sm:text-5xl">
+                      VS
+                    </div>
+                    <div className="mt-2 text-[10px] uppercase tracking-widest text-muted-foreground">
+                      Estadio Monumental
+                    </div>
+                  </div>
+                  <TeamBlock club={nextAway} />
+                </div>
+
+                <div className="mt-8 grid grid-cols-1 gap-2 sm:grid-cols-[2fr_1fr]">
+                  <Link
+                    to="/match"
+                    search={{ mode: "play" }}
+                    className="flex items-center justify-center gap-2 border border-accent/60 bg-accent px-6 py-3 font-display text-sm font-bold uppercase tracking-widest text-accent-foreground transition hover:brightness-110"
+                  >
+                    <PlayCircle className="h-5 w-5" />
+                    Jugar Partido
+                  </Link>
+                  <Link
+                    to="/match"
+                    search={{ mode: "sim" }}
+                    className="flex items-center justify-center gap-2 border border-border bg-secondary/60 px-6 py-3 font-display text-sm font-bold uppercase tracking-widest text-foreground transition hover:bg-secondary"
+                  >
+                    <FastForward className="h-4 w-4" />
+                    Simular
+                  </Link>
                 </div>
               </div>
-              <TeamBlock club={nextAway} />
+            </>
+          ) : (
+            <div className="p-6 sm:p-8">
+              <div className="font-display text-[10px] font-bold uppercase tracking-[0.3em] text-muted-foreground">
+                Temporada completada
+              </div>
+              <div className="mt-3 font-display text-2xl font-bold uppercase text-foreground">
+                No hay próximos partidos.
+              </div>
+              <p className="mt-3 text-sm text-muted-foreground">
+                Revisá calendario o iniciá una nueva carrera para volver a jugar.
+              </p>
+              <div className="mt-6">
+                <Link
+                  to="/career/calendar"
+                  className="flex items-center justify-center gap-2 border border-border bg-secondary/60 px-6 py-3 font-display text-sm font-bold uppercase tracking-widest text-foreground transition hover:bg-secondary"
+                >
+                  Ver calendario
+                </Link>
+              </div>
             </div>
-
-            <div className="mt-8 grid grid-cols-1 gap-2 sm:grid-cols-[2fr_1fr]">
-              <Link
-                to="/match"
-                search={{ mode: "play" }}
-                className="flex items-center justify-center gap-2 border border-accent/60 bg-accent px-6 py-3 font-display text-sm font-bold uppercase tracking-widest text-accent-foreground transition hover:brightness-110"
-              >
-                <PlayCircle className="h-5 w-5" />
-                Jugar Partido
-              </Link>
-              <Link
-                to="/match"
-                search={{ mode: "sim" }}
-                className="flex items-center justify-center gap-2 border border-border bg-secondary/60 px-6 py-3 font-display text-sm font-bold uppercase tracking-widest text-foreground transition hover:bg-secondary"
-              >
-                <FastForward className="h-4 w-4" />
-                Simular
-              </Link>
-            </div>
-          </div>
+          )}
         </section>
 
         {/* PLAYER CARD */}
